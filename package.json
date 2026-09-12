@@ -1,9 +1,13 @@
 {
   "name": "@taqlyn/nav-react-navigation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/taqlyn/nav-react-navigation.git"
   },
   "description": "Optional React Navigation helpers for Taqlyn deferred / warm links (no Match logic)",
   "type": "module",
