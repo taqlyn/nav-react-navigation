@@ -108,3 +108,80 @@ export function subscribeWarmLinks(
     sub.remove()
   }
 }
+
+export type ExpandIncomingUrl = (
+  url: string,
+) => Promise<{ href: string; pendingExpand?: boolean } | null>
+
+/**
+ * Wrap React Navigation linking so short URLs expand before getInitialURL.
+ * Inject SdkCore `resolveIncomingUrl`. `fallbackPath` used when expand fails.
+ */
+export function createTaqlynExpandingLinking(options: {
+  linking: LinkingLike
+  resolveIncomingUrl: ExpandIncomingUrl
+  fallbackPath?: string
+}): LinkingLike {
+  const fallback = options.fallbackPath?.trim() || '/'
+  const expand = async (url: string | null): Promise<string | null> => {
+    if (!url) return null
+    try {
+      const resolved = await options.resolveIncomingUrl(url)
+      return resolved?.href ?? fallback
+    } catch {
+      return fallback
+    }
+  }
+  return {
+    async getInitialURL() {
+      const initial = await options.linking.getInitialURL()
+      return expand(initial)
+    },
+    addEventListener(event, handler) {
+      return options.linking.addEventListener(event, ({ url }) => {
+        void expand(url).then((href) => {
+          if (href) handler({ url: href })
+        })
+      })
+    },
+  }
+}
+
+/**
+ * Detour-style Linking: wait for deferred resolve (once), else warm/initial URL.
+ * Pair with TaqlynProvider — pass getDeferredHref that resolves after isLinkProcessed.
+ */
+export function createTaqlynDeferredLinking(options: {
+  linking: LinkingLike
+  /** Await until deferred processing finishes; return mapped href or null. */
+  getDeferredHref: () => Promise<string | null | undefined>
+  resolveIncomingUrl?: ExpandIncomingUrl
+  fallbackPath?: string
+}): LinkingLike {
+  const fallback = options.fallbackPath?.trim() || '/'
+  const expandWarm = async (url: string | null): Promise<string | null> => {
+    if (!url) return null
+    if (!options.resolveIncomingUrl) return url
+    try {
+      const resolved = await options.resolveIncomingUrl(url)
+      return resolved?.href ?? fallback
+    } catch {
+      return fallback
+    }
+  }
+  return {
+    async getInitialURL() {
+      const deferred = await options.getDeferredHref()
+      if (deferred) return deferred
+      const initial = await options.linking.getInitialURL()
+      return expandWarm(initial)
+    },
+    addEventListener(event, handler) {
+      return options.linking.addEventListener(event, ({ url }) => {
+        void expandWarm(url).then((href) => {
+          if (href) handler({ url: href })
+        })
+      })
+    },
+  }
+}
