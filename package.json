@@ -1,6 +1,6 @@
 {
   "name": "@taqlyn/nav-react-navigation",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -38,7 +38,7 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@taqlyn/sdk-contract": "^0.1.0"
+    "@taqlyn/sdk-contract": "^0.2.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",
